@@ -1,9 +1,11 @@
 // backend.js
 import express from "express";
+import cors from "cors";
 
 const app = express();
 const port = 8000;
 
+app.use(cors());
 app.use(express.json());
 
 const users = {
@@ -47,14 +49,20 @@ const findUserByName = (name) => {
 const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
-// for step 7 - find by both name and job
 const findUserByNameAndJob = (name, job) => {
   return users["users_list"].filter(
     (user) => user["name"] === name && user["job"] === job
   );
 };
 
+// generate a random id for new users
+// not super unique but fine for this assignment
+function generateId() {
+  return Math.random().toString(36).substring(2, 10);
+}
+
 const addUser = (user) => {
+  user.id = generateId();
   users["users_list"].push(user);
   return user;
 };
@@ -69,7 +77,6 @@ app.get("/users", (req, res) => {
   const name = req.query.name;
   const job = req.query.job;
 
-  // if both name and job are provided, filter by both
   if (name != undefined && job != undefined) {
     let result = findUserByNameAndJob(name, job);
     result = { users_list: result };
@@ -95,11 +102,11 @@ app.get("/users/:id", (req, res) => {
 
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
-  addUser(userToAdd);
-  res.status(201).send(userToAdd);
+  const newUser = addUser(userToAdd);
+  // send back user with its new id so frontend can sync
+  res.status(201).send(newUser);
 });
 
-// step 7 - delete a user by id
 app.delete("/users/:id", (req, res) => {
   const id = req.params["id"];
   const index = users["users_list"].findIndex(
